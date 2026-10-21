@@ -1,0 +1,740 @@
+{
+  "name": "signal-alert",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "REPLACE-WITH-YOUR-OWN-WEBHOOK-PATH",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        -48,
+        -624
+      ],
+      "id": "e5a9cddf-0344-4d8e-aeea-e10f4f4a661e",
+      "name": "Webhook",
+      "webhookId": "REPLACE-WITH-YOUR-OWN-WEBHOOK-PATH",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE-AFTER-IMPORT",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1fafd70-e91f-4b6f-80b7-9cb7720b6a16",
+              "name": "event_id",
+              "value": "={{ $json.body.event_id }}",
+              "type": "string"
+            },
+            {
+              "id": "dbd445b0-0a6d-4e4b-9bc6-92bff8457935",
+              "name": "visitor_id",
+              "value": "={{ $json.body.visitor_id }}",
+              "type": "string"
+            },
+            {
+              "id": "db78aec6-97d3-4e3f-9cab-d1c6ac6af808",
+              "name": "domain",
+              "value": "={{ $json.body.domain }}",
+              "type": "string"
+            },
+            {
+              "id": "548d0441-2db1-410f-a624-bd430dad91a5",
+              "name": "path",
+              "value": "={{ $json.body.path }}",
+              "type": "string"
+            },
+            {
+              "id": "837cd16b-de40-41eb-9ef3-51eb4e71c8a5",
+              "name": "day_num",
+              "value": "={{ Math.floor(new Date($json.body.ts).getTime() / 86400000)}}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        96,
+        -624
+      ],
+      "id": "8560ac18-815b-4d40-abd4-635ab1fddfd6",
+      "name": "Flatten"
+    },
+    {
+      "parameters": {
+        "operation": "removeItemsSeenInPreviousExecutions",
+        "dedupeValue": "={{ $json.event_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -624
+      ],
+      "id": "86a5b8df-1ff1-4cb9-a503-b83a0c437ecb",
+      "name": "Remove Duplicates"
+    },
+    {
+      "parameters": {
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "REPLACE-AFTER-IMPORT",
+          "mode": "list",
+          "cachedResultName": "visits"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "visitor_id",
+              "keyValue": "={{ $json.visitor_id }}"
+            },
+            {
+              "keyName": "domain",
+              "keyValue": "={{ $json.domain}}"
+            },
+            {
+              "keyName": "day_num",
+              "keyValue": "={{ $json.day_num }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        528,
+        -624
+      ],
+      "id": "d92e15b9-ac39-47ad-936d-272cb20c4abc",
+      "name": "New visitor-day"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "REPLACE-AFTER-IMPORT",
+          "mode": "list",
+          "cachedResultName": "visits"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "visitor_id": "={{ $json.visitor_id }}",
+            "domain": "={{ $json.domain }}",
+            "day_num": "={{ $json.day_num }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "visitor_id",
+              "displayName": "visitor_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "domain",
+              "displayName": "domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "day_num",
+              "displayName": "day_num",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        656,
+        -624
+      ],
+      "id": "93838142-02d3-4619-89f4-ab1e2e8132f5",
+      "name": "Save visit"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "REPLACE-AFTER-IMPORT",
+          "mode": "list",
+          "cachedResultName": "visits"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "domain",
+              "keyValue": "={{ $json.domain }}"
+            },
+            {
+              "keyName": "day_num",
+              "condition": "gte",
+              "keyValue": "={{ $json.day_num - 6}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        784,
+        -624
+      ],
+      "id": "d335d327-43d4-4386-81b1-a179e3ff0501",
+      "name": "Read window"
+    },
+    {
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "field": "visitor_id"
+            }
+          ]
+        },
+        "fieldsToSplitBy": "domain",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1.1,
+      "position": [
+        928,
+        -624
+      ],
+      "id": "0ee01021-400a-4d80-b88b-dbd6105d0950",
+      "name": "Count"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5c471bac-19f2-4030-92ce-0ecb03ddb523",
+              "leftValue": "={{ $json.count_visitor_id }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        64,
+        -240
+      ],
+      "id": "c7486c33-dee3-4cef-ae26-7b7e4475bd5d",
+      "name": "3 or more"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "REPLACE-AFTER-IMPORT",
+          "mode": "list",
+          "cachedResultName": "alerts"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "domain",
+              "keyValue": "={{ $json.domain}}"
+            },
+            {
+              "keyName": "day_num",
+              "condition": "gte",
+              "keyValue": "={{ $('Flatten').first().json.day_num - 6 }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        -368
+      ],
+      "id": "9df83509-cbb9-4796-acbd-5173f8faeb1e",
+      "name": "No recent alerts",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "REPLACE-AFTER-IMPORT",
+          "mode": "list",
+          "cachedResultName": "alerts"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "domain": "={{ $('Flatten').first().json.domain }}",
+            "day_num": "={{ $('Flatten').first().json.day_num }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "domain",
+              "displayName": "domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "day_num",
+              "displayName": "day_num",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        864,
+        -416
+      ],
+      "id": "017d28b5-0632-4981-9224-6616b31540d5",
+      "name": "Save alert"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "company",
+        "operation": "searchByDomain",
+        "domain": "={{ $('Flatten').first().json.domain }}",
+        "limit": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        -256
+      ],
+      "id": "17f2556a-2509-4bef-99f4-abf24ef16e0a",
+      "name": "Search for a company by Domain",
+      "alwaysOutputData": true,
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "REPLACE-AFTER-IMPORT",
+          "name": "HubSpot Service Key account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4edaa4f8-b163-4a9d-bb2b-2d3f853f7b0a",
+              "leftValue": "={{ $json.companyId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        16,
+        144
+      ],
+      "id": "a0ec321d-4609-4ab7-a5b2-78a8fe57bc50",
+      "name": "Company found"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "company",
+        "name": "={{ $('Flatten').first().json.domain }}",
+        "additionalFields": {
+          "companyDomainName": "={{ $('Flatten').first().json.domain }}",
+          "companyOwner": "REPLACE-WITH-YOUR-HUBSPOT-OWNER-ID",
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "pricing_visits_7d",
+                "value": "={{ $('Count').first().json.count_visitor_id }}"
+              },
+              {
+                "property": "signal_status",
+                "value": "=ALERT {{ $('Webhook').first().json.body.ts.slice(0,10) }}: {{ $('Count').first().json.count_visitor_id }} target-page visitor-days in 7 days"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        192,
+        304
+      ],
+      "id": "7b22e36d-3e52-418c-af6e-78288aebbb0a",
+      "name": "Create a company",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "REPLACE-AFTER-IMPORT",
+          "name": "HubSpot Service Key account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "company",
+        "operation": "update",
+        "companyId": {
+          "__rl": true,
+          "value": "={{ $json.companyId }}",
+          "mode": "id"
+        },
+        "updateFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "pricing_visits_7d",
+                "value": "={{ $('Count').first().json.count_visitor_id }}"
+              },
+              {
+                "property": "signal_status",
+                "value": "=ALERT {{ $('Webhook').first().json.body.ts.slice(0,10) }}: {{ $('Count').first().json.count_visitor_id }} target-page visitor-days in 7 days"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        192,
+        48
+      ],
+      "id": "90aa05d2-657b-4895-b912-aff8afad33e1",
+      "name": "Update company",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "REPLACE-AFTER-IMPORT",
+          "name": "HubSpot Service Key account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "563fac8b-05a9-4424-857c-93eda96a12f4",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        576,
+        -368
+      ],
+      "id": "d99fe47c-2b7e-4d9d-ae45-31ba7e5a7fd0",
+      "name": "Cooldown over"
+    },
+    {
+      "parameters": {
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "REPLACE-AFTER-IMPORT",
+          "mode": "list",
+          "cachedResultName": "targets"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "domain",
+              "keyValue": "={{ $json.domain }}"
+            },
+            {
+              "keyName": "path",
+              "keyValue": "={{ $json.path }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        384,
+        -624
+      ],
+      "id": "68cd7925-2ff3-4a76-bf73-18d900671201",
+      "name": "Is a target"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Flatten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flatten": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Is a target",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New visitor-day": {
+      "main": [
+        [
+          {
+            "node": "Save visit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save visit": {
+      "main": [
+        [
+          {
+            "node": "Read window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read window": {
+      "main": [
+        [
+          {
+            "node": "Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count": {
+      "main": [
+        [
+          {
+            "node": "3 or more",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3 or more": {
+      "main": [
+        [
+          {
+            "node": "No recent alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No recent alerts": {
+      "main": [
+        [
+          {
+            "node": "Cooldown over",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save alert": {
+      "main": [
+        [
+          {
+            "node": "Search for a company by Domain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search for a company by Domain": {
+      "main": [
+        [
+          {
+            "node": "Company found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company found": {
+      "main": [
+        [
+          {
+            "node": "Update company",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cooldown over": {
+      "main": [
+        [
+          {
+            "node": "Save alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is a target": {
+      "main": [
+        [
+          {
+            "node": "New visitor-day",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "REPLACE-AFTER-IMPORT",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "id": "REPLACE-AFTER-IMPORT",
+  "tags": []
+}
